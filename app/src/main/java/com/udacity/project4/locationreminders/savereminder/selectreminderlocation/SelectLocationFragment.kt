@@ -54,9 +54,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
 //        TODO: add the map setup implementation
 
-        val mapFragment = activity?.supportFragmentManager?.findFragmentById(R.id.map) as
+
+        val mapFragment = childFragmentManager.findFragmentById(R.id.map) as
                 SupportMapFragment
         mapFragment.getMapAsync(this)
+        return binding.root
 
     }
 //        TODO: zoom to the user location after taking his permission
@@ -99,9 +101,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
 
 //        TODO: call this function after the user confirms on the selected location
-        onLocationSelected()
+     //  must call this:  onLocationSelected()
 
-        return binding.root
+
 
 
     private fun onLocationSelected() {
@@ -134,6 +136,32 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             true
         }
         else -> super.onOptionsItemSelected(item)
+    }
+
+    override fun onMapReady(googleMap: GoogleMap) {
+        map = googleMap
+
+        // Add a marker in Sydney and move the camera
+        /*    val sydney = LatLng(-34.0, 151.0) - put marker at my home, instead!
+            map.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
+            map.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+            */
+        val latitude = 36.1387812280053
+        val longitude = -115.14705185099919
+        val homeLatLng = LatLng(latitude, longitude)
+        val zoomLevel = 15f
+        val overlaySize = 100f
+
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, zoomLevel))
+        map.addMarker(MarkerOptions().position(homeLatLng))
+       // val androidOverlay = GroundOverlayOptions().image(BitmapDescriptorFactory.fromResource(R.drawable.android))
+            //  .position(homeLatLng, overlaySize)
+       // map.addGroundOverlay(androidOverlay)
+
+       // setMapLongClick(map)
+       // setPoiClick(map)
+       // setMapStyle(map)
+        enableMyLocation()
     }
 
 

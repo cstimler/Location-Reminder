@@ -60,6 +60,7 @@ class AuthenticationActivity : AppCompatActivity() {
             AuthUI.getInstance()
                 .createSignInIntentBuilder()
                 .setAvailableProviders(providers)
+                .setIsSmartLockEnabled(false)
                 .build(),
             AuthenticationActivity.SIGN_IN_RESULT_CODE
         )
