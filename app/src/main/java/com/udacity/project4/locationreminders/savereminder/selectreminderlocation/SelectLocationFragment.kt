@@ -8,7 +8,9 @@ import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.content.res.Resources
+import android.location.Location
 import android.os.Bundle
+import android.se.omapi.SEService
 import android.util.Log
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
@@ -16,13 +18,18 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.GoogleApi
+import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.common.api.internal.ConnectionCallbacks
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.android.gms.tasks.Task
 import com.google.android.material.snackbar.Snackbar
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
@@ -31,6 +38,7 @@ import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
+import org.koin.dsl.koinApplication
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
@@ -39,6 +47,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var map: GoogleMap
     private val REQUEST_LOCATION_PERMISSION = 1
+    private var fusedLocationProviderClient: FusedLocationProviderClient? = null
+    //private var locationRequest: LocationRequest? = null
+    private var homeLatLng = LatLng(-34.0, 151.0)
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -51,6 +62,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(activity!!)
 
 //        TODO: add the map setup implementation
 
@@ -73,9 +85,11 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             permissions: Array<out String>,
             grantResults: IntArray
         ) {
+            Log.i("TAG", "It ENTERS onRequestPermissionsResult")
             super.onRequestPermissionsResult(requestCode, permissions, grantResults)
             if (requestCode == REQUEST_LOCATION_PERMISSION) {
                 if (grantResults.size > 0 && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    Log.i("TAG", "ZZZ in onRequestPermissionsResult()")
                     enableMyLocation()
                 }
             }
@@ -85,6 +99,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         fun enableMyLocation() {
             if (isPermissionGranted()) {
                 map.setMyLocationEnabled(true)
+                // place actions that need to be taken once permission is granted here:
+                getDeviceLocation()
             }
             else {
                 requestPermissions(
@@ -93,6 +109,39 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 )
 
             }
+        }
+
+    @SuppressLint("MissingPermission")
+    private fun getDeviceLocation() {
+        Log.i("TAG", "ZZZ entered into getDeviceLocation()")
+       try {
+           if (isPermissionGranted()) {
+               val locationResult = fusedLocationProviderClient?.lastLocation
+               locationResult?.addOnCompleteListener(activity!!) { task ->
+                   if (task.isSuccessful) {
+                       Log.i("TAG", "ZZZ task was successful")
+                       val lastKnownLocation = task.result
+                       Log.i("TAG what is task?", "ZZZ " + task.toString())
+                       Log.i("TAG", "ZZZ " + lastKnownLocation.toString() )
+                       if (lastKnownLocation != null) {
+                           map.moveCamera(
+                               CameraUpdateFactory.newLatLngZoom(
+                                   LatLng(lastKnownLocation.latitude, lastKnownLocation.longitude),
+                                   15.0f
+                               )
+                           )
+                           Log.i("TAG", "ZZZ" + lastKnownLocation.latitude.toString() + " " + lastKnownLocation.longitude.toString())
+                       } }
+                   else {
+                          Log.d("TAG", "ZZZ Current location is null. Using defaults.")
+                       Log.e("TAG", "ZZZ Exception: %s", task.exception)
+                       map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, 15.0f))
+                       }
+                   }
+               }
+           } catch (e: SecurityException) {
+               Log.e("ZZZ Exception: %s", e.message, e)
+       }
         }
 
 
@@ -139,16 +188,22 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
+        var locationRequest = LocationRequest()
+        locationRequest.setInterval(1000)
+      //  mFusedLocationProviderClient.requestLocationUpdates(locationRequest, )
+
         map = googleMap
 
         // Add a marker in Sydney and move the camera
         /*    val sydney = LatLng(-34.0, 151.0) - put marker at my home, instead!
             map.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
             map.moveCamera(CameraUpdateFactory.newLatLng(sydney))
-            */
-        val latitude = 36.1387812280053
-        val longitude = -115.14705185099919
-        val homeLatLng = LatLng(latitude, longitude)
+
+        var latitude = 36.1387812280053
+        var longitude = -115.14705185099919
+        latitude = -34.0
+        longitude = 151.0
+        homeLatLng = LatLng(latitude, longitude)
         val zoomLevel = 15f
         val overlaySize = 100f
 
@@ -161,7 +216,10 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
        // setMapLongClick(map)
        // setPoiClick(map)
        // setMapStyle(map)
+       */
+        Log.i("TAG", "ZZZ in onMapReady")
         enableMyLocation()
+
     }
 
 
