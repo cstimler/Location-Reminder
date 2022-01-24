@@ -39,6 +39,8 @@ import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
 import org.koin.dsl.koinApplication
+import com.google.android.gms.maps.model.PointOfInterest
+import java.util.*
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
@@ -50,6 +52,7 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private var fusedLocationProviderClient: FusedLocationProviderClient? = null
     //private var locationRequest: LocationRequest? = null
     private var homeLatLng = LatLng(-34.0, 151.0)
+    private var localpoi: PointOfInterest? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -59,6 +62,9 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
         binding.viewModel = _viewModel
         binding.lifecycleOwner = this
+        binding.saveGeoLocation.setOnClickListener{
+            onLocationSelected()
+    }
 
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
@@ -150,12 +156,20 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
 
 //        TODO: call this function after the user confirms on the selected location
-     //  must call this:  onLocationSelected()
+     //  must call onLocationSelected()
 
 
 
 
     private fun onLocationSelected() {
+        _viewModel.latitude.value = localpoi?.latLng?.latitude
+        _viewModel.longitude.value = localpoi?.latLng?.longitude
+        _viewModel.reminderSelectedLocationStr.value = localpoi?.name
+        _viewModel.selectedPOI.value = localpoi
+        Log.i("YYY", "reminderSelectedLocationStr is: " + localpoi?.name)
+
+        // https://stackoverflow.com/questions/10863572/programmatically-go-back-to-the-previous-fragment-in-the-backstack
+        getParentFragmentManager().popBackStackImmediate()
         //        TODO: When the user confirms on the selected location,
         //         send back the selected location details to the view model
         //         and navigate back to the previous fragment to save the reminder and add the geofence
@@ -213,13 +227,48 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             //  .position(homeLatLng, overlaySize)
        // map.addGroundOverlay(androidOverlay)
 
-       // setMapLongClick(map)
-       // setPoiClick(map)
+       //setMapLongClick(map)
+        setPoiClick(map)
        // setMapStyle(map)
        */
+        setPoiClick(map)
+        setMapLongClick(map)
         Log.i("TAG", "ZZZ in onMapReady")
         enableMyLocation()
 
+    }
+
+    private fun setMapLongClick(map:GoogleMap) {
+        map.setOnMapLongClickListener { latLng ->
+            val snippet = String.format(
+                Locale.getDefault(),
+                "Lat: %1$.5f, Long: %2$.5f",
+                latLng.latitude,
+                latLng.longitude
+            )
+            map.clear() // erases previous markers until user is ready to press "SAVE"
+            map.addMarker(
+                MarkerOptions()
+                    .position(latLng)
+                    .title(getString(R.string.dropped_pin))
+                    .snippet(snippet)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+
+            )}
+    }
+
+    private fun setPoiClick(map: GoogleMap) {
+        map.setOnPoiClickListener {
+                poi ->
+            val poiMarker = map.addMarker(
+                MarkerOptions()
+                    .position(poi.latLng)
+                    .title(poi.name)
+            )
+            poiMarker.showInfoWindow()
+            // pass value to global variable:
+            localpoi = poi
+        }
     }
 
 

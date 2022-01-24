@@ -1,6 +1,7 @@
 package com.udacity.project4.locationreminders.savereminder
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.PointOfInterest
@@ -37,6 +38,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
      * Validate the entered data then saves the reminder data to the DataSource
      */
     fun validateAndSaveReminder(reminderData: ReminderDataItem) {
+        Log.i("YYY", "Entered into validateAndSaveReminder in SaveReminderViewModel.kt")
         if (validateEnteredData(reminderData)) {
             saveReminder(reminderData)
         }
